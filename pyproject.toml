@@ -3,11 +3,16 @@ name = "punta-ml"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "smerlano",email = "smerlanooo@gmail.com"}
+    {name = "smerlano", email = "smerlanooo@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.11,<4.0"
+requires-python = ">=3.12,<3.13"
 dependencies = [
+    "pandas<2.2",
+    "duckdb",
+    "yfinance",
+    "python-dotenv",
+    "great-expectations (>=1.4.4,<2.0)",
 ]
 
 
