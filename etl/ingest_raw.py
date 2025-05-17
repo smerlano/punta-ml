@@ -2,27 +2,29 @@
 """
 etl/ingest_raw.py
 
-Fetches daily OHLCV prices via yfinance (unadjusted) and loads them into
-DuckDB under schema `raw.prices`, dropping any prior table to avoid schema mismatches.
+Backfill 2013–2024 raw price data for your 20‐ticker universe.
 """
 
+import os
 import duckdb
 import yfinance as yf
-import os
 
 # === CONFIGURATION ===
 DB_PATH    = os.path.join("data", "punta.duckdb")
-TICKERS    = ["AAPL", "MSFT", "SPY"]   # initial test universe
-START_DATE = "2023-01-01"             # adjust as needed
+TICKERS = [
+    "SPY","NVDA","AMD","TSLA","AVGO","NFLX","NOW","PGR","LLY","ISRG","AMZN",
+    "MSFT","1211.HK","META","RMS","600519.SS","ASML","TMUS","COST",
+    "2330.TW","RELIANCE.NS"
+]
+START_DATE = "2013-01-01"
+END_DATE   = "2024-10-31"
 
 # === CONNECT TO DUCKDB ===
 con = duckdb.connect(DB_PATH)
 con.execute("CREATE SCHEMA IF NOT EXISTS raw")
 
-# Drop old table (so we always match schema)
+# Drop and recreate raw.prices to get a clean 2013–2024 window
 con.execute("DROP TABLE IF EXISTS raw.prices")
-
-# Create table with exactly 8 columns
 con.execute("""
     CREATE TABLE raw.prices (
         date       DATE,
@@ -38,12 +40,14 @@ con.execute("""
 
 # === FETCH & LOAD ===
 for ticker in TICKERS:
-    print(f"📥 Fetching {ticker}…")
-    # force unadjusted so we get the "Adj Close" column
-    df = yf.download(ticker,
-                     start=START_DATE,
-                     progress=False,
-                     auto_adjust=False)
+    print(f"📥 Fetching {ticker} from {START_DATE} to {END_DATE}…")
+    df = yf.download(
+        ticker,
+        start=START_DATE,
+        end=END_DATE,
+        progress=False,
+        auto_adjust=False
+    )
     df = (
         df
         .reset_index()
@@ -59,10 +63,9 @@ for ticker in TICKERS:
     )
     df["ticker"] = ticker
 
-    # Insert rows (duckdb will match by column order)
     con.register("tmp", df)
     con.execute("INSERT INTO raw.prices SELECT * FROM tmp")
     con.unregister("tmp")
     print(f"✅ Loaded {len(df)} rows for {ticker}")
 
-print("🎉 RAW ingestion complete.")
+print("🎉 FULL RAW backfill complete.")
