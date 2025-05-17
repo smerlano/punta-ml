@@ -1,0 +1,11 @@
+{
+    "sqltools.connections": [
+        {
+            "previewLimit": 50,
+            "driver": "DuckDB",
+            "name": "punta-db",
+            "database": "${workspaceFolder:punta-ml}/data/punta.duckdb"
+        }
+    ],
+    "sqltools.useNodeRuntime": true
+}
